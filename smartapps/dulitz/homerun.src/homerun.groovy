@@ -109,6 +109,11 @@ mappings {
             PUT: "_api_put"
         ]
     }
+    path("/:type/:id/:command") {
+    	action: [
+        	PUT: "_api_put_working"
+        ]
+    }
 }
 
 /*
@@ -188,12 +193,26 @@ def _api_list() {
 }
 
 def _api_put() {
+	log.info "request ${request}"
+	def json = request.JSON.command
     def devices = _devices_for_type(params.type)
     def device = devices.find { it.id == params.id }
     if (!device) {
         httpError(404, "Device not found")
     } else {
-        _device_command(device, params.type, request.JSON)
+        _device_command(device, params.type, json)
+    }
+}
+
+def _api_put_working() {
+    def devices = _devices_for_type(params.type)
+    def device = devices.find { it.id == params.id }
+    if (!device) {
+        httpError(404, "Device not found")
+    } else {
+    	def json = [:]
+        json[params.type] = params.command
+        _device_command(device, params.type, json)
     }
 }
 
@@ -330,11 +349,11 @@ private _device_command(device, type, jsond) {
     
     if (type == "switch" || type == "outlet") {
         def n = jsond['switch']
-        if (n == -1) {
+        if (n == -1 || n == "-1" || n == "toggle") {
             def o = device.currentState('switch')?.value
             n = ( o != 'on' )
         }
-        if (n) {
+        if (n && n != 0 && n != "0" && n != "off") {
             device.on()
         } else {
             device.off()
