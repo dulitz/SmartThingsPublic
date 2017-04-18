@@ -158,7 +158,7 @@ def _event_subscribe() {
     subscribe(d_water, "water", "_on_event")
     subscribe(d_smoke, "smoke", "_on_event")
     subscribe(d_carbonMonoxide, "carbonMonoxide", "_on_event")
-    subscribe(d_power, "powerMeter", "_on_event")
+    subscribe(d_power, "power", "_on_event")
 }
 
 /*
@@ -288,7 +288,7 @@ def _dtd()
 		water: d_water,
 		smoke: d_smoke,
 		carbonMonoxide: d_carbonMonoxide,
-		powerMeter: d_power,
+		power: d_power,
         lqi: d_lqi,
 
     ]
@@ -353,12 +353,12 @@ private _device_to_json(device, type) {
     }
 
     def vd = [:]
-    def jd = [id: device.id, label: device.label, type: type, value: vd, hub: device.hub.name];
+    def jd = [id: device.id, label: device.label, type: type, value: vd, hub: device.hub?.name];
     
     if (type == "switch" || type == "outlet") {
         def s = device.currentState('switch')
         vd['timestamp'] = s?.isoDate
-        vd['switch'] = s?.value == "on"
+        vd['switch'] = (s?.value && s?.value != 'off') ? s.value : ''
     } else if (type == "motion") {
         def s = device.currentState('motion')
         vd['timestamp'] = s?.isoDate
@@ -382,11 +382,11 @@ private _device_to_json(device, type) {
     } else if (type == "battery") {
         def s = device.currentState('battery')
         vd['timestamp'] = s?.isoDate
-        vd['battery'] = s?.value.toFloat() / 100.0
+        vd['battery'] = s?.value.toFloat()
      } else if (type == "humidity") {
         def s = device.currentState('humidity')
         vd['timestamp'] = s?.isoDate
-        vd['humidity'] = s?.value.toFloat() / 100.0
+        vd['humidity'] = s?.value.toFloat()
     } else if (type == "threeAxis") {
         def s = device.currentState('threeAxis')
         vd['timestamp'] = s?.isoDate
@@ -401,17 +401,18 @@ private _device_to_json(device, type) {
 		def s = device.currentState('energy')
 		vd['timestamp'] = s?.isoDate
 		vd['energy'] = s?.value.toFloat()
-    } else if (type == "smoke") {
-		def s = device.currentState('smoke')
-		vd['timestamp'] = s?.isoDate
-		vd['smoke'] = s?.smoke?.value == 'detected'
-		vd['carbonMonoxide'] = s?.carbonMonoxide?.value == 'detected'
-		vd['smoke_tested'] = s?.smoke?.value == 'tested'
-		vd['carbonMonoxide_tested'] = s?.carbonMonoxide?.value == 'tested'
+    } else if (type == "smoke" || type == "carbonMonoxide") {
+		/*def s = device.currentState('smoke')*/
+        def s = device.smokeState
+		if (s?.value) vd['smoke'] = s.value != 'clear' ? s.value : ''
+        def t = device.carbonMonoxideState
+        if (t?.value) vd['carbonMonoxide'] = t.value != 'clear' ? t.value : ''
+		vd['timestamp'] = s ? s.isoDate : t?.isoDate
     } else if (type == "water") {
-		def s = device.currentState('water')
+		/* def s = device.currentState('water') */
+        def s = device.waterState
 		vd['timestamp'] = s?.isoDate
-		vd['water'] = s?.value == 'wet'
+		vd['water'] = (s?.value && s?.value != 'dry') ? s.value : ''
     }
 
     return jd
