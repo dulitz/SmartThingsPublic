@@ -260,7 +260,7 @@ def _send_homerun(device, device_type, deviced) {
     def hash = sha256Hash(digest)
  */
  	def hash = "".toString()
-    def topic = "st/${device_type}/${deviced.id}".toString()
+    def topic = "st/${deviced.id}".toString()
     
     def uri = d_event_callback_uri
     if (!uri?.startsWith("https://")) uri = appSettings.uri
@@ -426,7 +426,7 @@ private _device_to_json(device, type) {
 		if (s?.value) vd['smoke'] = s.value != 'clear' ? s.value : ''
         def t = device.carbonMonoxideState
         if (t?.value) vd['carbonMonoxide'] = t.value != 'clear' ? t.value : ''
-		vd['timestamp'] = s ? s.isoDate : t?.isoDate
+		vd['timestamp'] = s ? s.isoDate : t?.isoDate /* should be MAX */
     } else if (type == "water") {
 		/* def s = device.currentState('water') */
         def s = device.waterState
